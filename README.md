@@ -6,6 +6,10 @@ Dockerfile that uses pyenv to install python versions:
 - 3.11.9
 - 3.12.4
 
+## Build
+
+`docker build -t pyenv:1.0.0 -f ./Dockerfile-pyenv .`
+
 ## Usage
 
 ### Directories
