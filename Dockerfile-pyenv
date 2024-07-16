@@ -1,0 +1,54 @@
+FROM ubuntu:noble-20240605
+ARG HOME="/root"
+ARG PYTHON_3_10="3.10.14"
+ARG PYTHON_3_11="3.11.9"
+ARG PYTHON_3_12="3.12.4"
+
+WORKDIR "${HOME}"
+
+# install dependencies
+RUN apt-get update                               \
+  && apt-get install -y --no-install-recommends  \
+    curl=8.5.0-2ubuntu10.1                       \
+    ca-certificates=20240203                     \
+    git=1:2.43.0-1ubuntu7.1                      \
+    gcc=4:13.2.0-7ubuntu1                        \
+    make=4.3-4.1build2                           \
+    libsqlite3-dev=3.45.1-1ubuntu2               \
+    zlib1g-dev=1:1.3.dfsg-3.1ubuntu2             \
+    libssl-dev=3.0.13-0ubuntu3.1                 \
+    libreadline-dev=8.2-4build1                  \
+    libffi-dev=3.4.6-1build1                     \
+    libbz2-dev=1.0.8-5.1                         \
+    liblzma-dev=5.6.1+really5.4.5-1              \
+  && rm -rf /var/lib/apt/lists/*
+
+# install pyenv
+ENV PYENV_ROOT="${HOME}/.pyenv"
+ENV PATH="${PYENV_ROOT}/bin:${PATH}"
+
+# hadolint ignore=DL4006
+RUN curl https://pyenv.run | bash       \
+  && pyenv init - >> "${HOME}/.bashrc"  \
+  && pyenv virtualenv-init - >> "${HOME}/.bashrc"
+
+# install different versions of python
+RUN pyenv install "${PYTHON_3_10}"   \
+  && pyenv install "${PYTHON_3_11}"  \
+  && pyenv install "${PYTHON_3_12}"
+
+# create directories that will use the different versions of python
+# hadolint ignore=DL3003
+RUN mkdir "${HOME}/versions"  \
+  && cd "${HOME}/versions/" && mkdir "${PYTHON_3_10}" && cd "${PYTHON_3_10}" && pyenv local "${PYTHON_3_10}"  \
+  && cd "${HOME}/versions/" && mkdir "${PYTHON_3_11}" && cd "${PYTHON_3_11}" && pyenv local "${PYTHON_3_11}"  \
+  && cd "${HOME}/versions/" && mkdir "${PYTHON_3_12}" && cd "${PYTHON_3_12}" && pyenv local "${PYTHON_3_12}"
+
+# create virtual environments for the different versions of python
+# hadolint ignore=DL3003
+RUN mkdir "${HOME}/venvs"  \
+  && cd "${HOME}/venvs/" && pyenv virtualenv "${PYTHON_3_10}" "py-${PYTHON_3_10}" && ln -s "${PYENV_ROOT}/versions/py-${PYTHON_3_10}" "py-${PYTHON_3_10}" \
+  && cd "${HOME}/venvs/" && pyenv virtualenv "${PYTHON_3_11}" "py-${PYTHON_3_11}" && ln -s "${PYENV_ROOT}/versions/py-${PYTHON_3_11}" "py-${PYTHON_3_11}" \
+  && cd "${HOME}/venvs/" && pyenv virtualenv "${PYTHON_3_12}" "py-${PYTHON_3_12}" && ln -s "${PYENV_ROOT}/versions/py-${PYTHON_3_12}" "py-${PYTHON_3_12}"
+
+ENV PATH="${PYENV_ROOT}/shims:${PATH}"
